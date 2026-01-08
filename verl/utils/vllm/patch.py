@@ -67,6 +67,20 @@ except ImportError:
     pass
 
 
+def patch_fused_moe_experts_weights(weights):
+    # Early return if no MOE models are supported
+    if not SUPPORTED_MOE_MODELS:
+        return weights
+    for name, param in weights:
+        if "mlp.experts" in name and param.dim() == 3:
+            for idx, value in enumerate(param.unbind()):
+                # model.layers.0.mlp.experts.down_proj -> model.layers.0.mlp.experts.0.down_proj.weight
+                name = name.replace("mlp.experts", f"mlp.experts.{idx}") + ".weight"
+                yield name, value
+        else:
+            yield name, param
+
+
 def patch_vllm_moe_model_weight_loader(model):
     # this is a work around to load the weight of vllm fused moe model
     # it is from a bug from vllm 0.8.2

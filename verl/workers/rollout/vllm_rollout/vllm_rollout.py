@@ -252,11 +252,12 @@ class vLLMAsyncRollout(BaseRollout):
             self.inference_engine.worker.add_lora(lora_request)
             logger.info(f"vLLM load weights, loaded_params: {len(weights)}")
         else:
-            from verl.utils.vllm.patch import patch_vllm_moe_model_weight_loader
+            from verl.utils.vllm.patch import patch_fused_moe_experts_weights, patch_vllm_moe_model_weight_loader
 
             model_runner = self.inference_engine.worker.model_runner
             model = model_runner.model
             patch_vllm_moe_model_weight_loader(model)
+            weights = patch_fused_moe_experts_weights(weights)
 
             # Add the FP8 related logic here as sharding manager has been deprecated.
             # Check if FP8 quantization is enabled and apply appropriate weight loading
